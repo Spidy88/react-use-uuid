@@ -1,0 +1,36 @@
+{
+  "name": "react-use-uuid",
+  "version": "1.0.0",
+  "description": "A React Hook for generating a unique id for the lifetime of a Component",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Spidy88/react-use-uuid.git"
+  },
+  "keywords": [
+    "react",
+    "hooks"
+  ],
+  "author": "Nick Ferraro <the.nick.ferraro@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Spidy88/react-use-uuid/issues"
+  },
+  "homepage": "https://github.com/Spidy88/react-use-uuid#readme",
+  "dependencies": {
+    "react": "^16.9.0",
+    "uuid": "^3.3.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.7.7",
+    "@babel/preset-env": "^7.7.7",
+    "@babel/preset-react": "^7.7.4",
+    "@testing-library/react": "^9.4.0",
+    "babel-jest": "^24.9.0",
+    "jest": "^24.9.0",
+    "react-dom": "^16.9.0"
+  }
+}
