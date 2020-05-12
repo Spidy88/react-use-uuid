@@ -34,9 +34,48 @@ Behind the scenes, useId makes use of the powerful [uuid package](https://www.np
 ```javascript
 import React, { useCallback, useEffect } from 'react';
 import useId from 'react-use-uuid';
+import uuidv5 from 'uuid/v5';
 
 function MyComponent() {
-    const id = useId('v3');
+    const id = useId('v5', 'hello.example.com', uuidv5.DNS);
+    const onDrop = useCallback((files) => console.log(`Received ${files.length} files`));
+
+    useEffect(() => {
+        // Third party code with limited integration
+        Aspera.Connect.setDragDropTargets(`#${id}`, onDrop);
+    }, []);
+
+    return(
+        <div id={id}>
+            Drop your files here
+        </div>
+    );
+}
+```
+
+## Custom id hook
+
+If you find your application needs v3 or v5 of uuid, which require additional
+properties to generate an id, create a custom hook to keep your code readable
+and DRY.
+
+```javascript
+// UseCustomId.js
+import useId from 'react-use-uuid';
+import uuidv5 from 'uuid/v5';
+
+function useCustomId() {
+    return useId('v5', 'hello.example.com', uuidv5.DNS);
+}
+```
+
+```javascript
+// MyComponent.js
+import React, { useCallback, useEffect } from 'react';
+import useCustomId from './useCustomId';
+
+function MyComponent() {
+    const id = useCustomId();
     const onDrop = useCallback((files) => console.log(`Received ${files.length} files`));
 
     useEffect(() => {
