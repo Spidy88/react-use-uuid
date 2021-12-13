@@ -1,6 +1,6 @@
 {
   "name": "react-use-uuid",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A React Hook for generating a unique id for the lifetime of a Component",
   "main": "dist/index.js",
   "module": "index.js",
