@@ -1,92 +1,123 @@
 # react-use-uuid
 
-When building a Component using React Hooks, there are instances where a unique id is necessary. With React class components one could simply generate an ID and store it as a property on the class instances (not state, though there is nothing wrong with using state). An unfortunate side effect of Hooks is that they aren't class instances and we must rely on a new paradigm for generating a unique id for the lifetime of our component.
+A tiny React Hook that generates a unique id which stays **stable for the entire lifetime of a component**.
 
-`useId` does just that by creating a memoized id generator. The benefit is two-fold. First, the id generator only runs on the first render, saving us from wasting time generating ids that won't be used. Second, our id never changes for the entire lifecycle of our component, giving us a bit more reliability when using said id.
+- 🪶 **Lightweight** — the default import only pulls in UUID v4, nothing else.
+- 🌳 **Tree-shakeable** — ESM + CJS builds, `sideEffects: false`. You bundle only the uuid code you actually use.
+- 🔠 **TypeScript** — ships with type definitions.
+- ⚛️ **Works with React 16.8+** through 18, and still useful in 19 (see [vs. React 19's `useId`](#vs-reacts-built-in-useid)).
 
-## How to use it
+```bash
+npm install react-use-uuid
+```
 
-```javascript
-import React, { useCallback, useEffect } from 'react';
+## Why
+
+With class components you could generate an id once and stash it on the instance. Hooks have no instance, so you need a hook that creates an id on the first render and returns that same value on every render afterwards.
+
+`useId` does exactly that. The generator runs **once**, on the first render, and the id never changes for the lifetime of the component — handy for DOM ids, `htmlFor`/`aria-*` wiring, or integrating third‑party libraries that take a selector.
+
+## Usage
+
+```jsx
+import { useCallback, useEffect } from 'react';
 import useId from 'react-use-uuid';
 
 function MyComponent() {
-    const id = useId();
-    const onDrop = useCallback((files) => console.log(`Received ${files.length} files`));
+  const id = useId(); // a stable UUID v4
 
-    useEffect(() => {
-        // Third party code with limited integration
-        Aspera.Connect.setDragDropTargets(`#${id}`, onDrop);
-    }, []);
+  const onDrop = useCallback((files) => console.log(`Received ${files.length} files`), []);
 
-    return(
-        <div id={id}>
-            Drop your files here
-        </div>
-    );
+  useEffect(() => {
+    // Third party code with limited integration
+    Aspera.Connect.setDragDropTargets(`#${id}`, onDrop);
+  }, [id, onDrop]);
+
+  return <div id={id}>Drop your files here</div>;
 }
 ```
 
-## Use a different version of UUID ID generation
+A named import is also available (and is the recommended form for CommonJS):
 
-Behind the scenes, useId makes use of the powerful [uuid package](https://www.npmjs.com/package/uuid). By default, version 4 of the id generation is used but all versions are supported through an optional parameter to `useId`.
+```js
+import { useId } from 'react-use-uuid';
+// CommonJS:
+const { useId } = require('react-use-uuid');
+```
 
-```javascript
-import React, { useCallback, useEffect } from 'react';
+## Using a different UUID version (or any id generator)
+
+`useId` accepts an optional **factory function** — anything that returns a string. The default is UUID v4. Because you choose the generator by what you *import* (rather than by passing a version string), your bundler only includes the uuid code you actually reference.
+
+```jsx
 import useId from 'react-use-uuid';
-import uuidv5 from 'uuid/v5';
+import { v5 } from 'uuid';
 
 function MyComponent() {
-    const id = useId('v5', 'hello.example.com', uuidv5.DNS);
-    const onDrop = useCallback((files) => console.log(`Received ${files.length} files`));
-
-    useEffect(() => {
-        // Third party code with limited integration
-        Aspera.Connect.setDragDropTargets(`#${id}`, onDrop);
-    }, []);
-
-    return(
-        <div id={id}>
-            Drop your files here
-        </div>
-    );
+  // v5 derives a deterministic id from a name + namespace
+  const id = useId(() => v5('hello.example.com', v5.DNS));
+  return <div id={id} />;
 }
 ```
 
-## Custom id hook
+This works with any uuid version (`v1`, `v3`, `v4`, `v5`, `v6`, `v7`) — or a completely custom generator:
 
-If you find your application needs v3 or v5 of uuid, which require additional
-properties to generate an id, create a custom hook to keep your code readable
-and DRY.
+```jsx
+const id = useId(() => `widget-${Math.random().toString(36).slice(2)}`);
+```
 
-```javascript
-// UseCustomId.js
-import useId from 'react-use-uuid';
-import uuidv5 from 'uuid/v5';
+### Custom id hook
 
-function useCustomId() {
-    return useId('v5', 'hello.example.com', uuidv5.DNS);
+If you reuse a particular generator across your app, wrap it in your own hook to keep things DRY:
+
+```js
+// useCustomId.js
+import { useId } from 'react-use-uuid';
+import { v5 } from 'uuid';
+
+export function useCustomId() {
+  return useId(() => v5('hello.example.com', v5.DNS));
 }
 ```
 
-```javascript
-// MyComponent.js
-import React, { useCallback, useEffect } from 'react';
-import useCustomId from './useCustomId';
+## vs. React's built-in `useId`
 
-function MyComponent() {
-    const id = useCustomId();
-    const onDrop = useCallback((files) => console.log(`Received ${files.length} files`));
+React 18 introduced — and React 19 keeps — a built-in [`useId`](https://react.dev/reference/react/useId). **They solve different problems**, so pick based on what you need:
 
-    useEffect(() => {
-        // Third party code with limited integration
-        Aspera.Connect.setDragDropTargets(`#${id}`, onDrop);
-    }, []);
+| | React's `useId` | `react-use-uuid` |
+| --- | --- | --- |
+| Output | An opaque, SSR‑safe token like `«r0»` | A real UUID (e.g. `f47ac10b‑58cc‑4372‑a567‑0e02b2c3d479`) |
+| Designed for | Hydration‑stable `id`s for accessibility attributes (`htmlFor`, `aria-*`) | A genuine unique identifier you control |
+| Safe as a DOM `id` you query / pass to 3rd‑party libs | Not guaranteed — the format is reserved and intentionally opaque | Yes |
+| Usable as a React `key` | No (per React docs) | Yes |
+| Available | React 18+ | React 16.8+ |
 
-    return(
-        <div id={id}>
-            Drop your files here
-        </div>
-    );
-}
+Use React's `useId` for wiring a label to an input. Reach for `react-use-uuid` when you need an actual UUID value — a queryable DOM id, a key for an external library, a draft record id, etc. — or when you simply prefer the UUID format over React's opaque tokens, or you're on React 16.8–17 where the built-in doesn't exist.
+
+## Migrating from v2
+
+v3 is a **breaking change** made to keep the package lightweight. The old `useId(version, ...args)` string API forced every uuid version into your bundle; the new factory API lets bundlers drop everything you don't use.
+
+```diff
+  import useId from 'react-use-uuid';
++ import { v5 } from 'uuid';
+
+  const id = useId();                                    // unchanged — still v4
+- const id5 = useId('v5', 'hello.example.com', uuidv5.DNS);
++ const id5 = useId(() => v5('hello.example.com', v5.DNS));
 ```
+
+`useId()` with no arguments is unchanged — it still returns a UUID v4.
+
+## API
+
+```ts
+function useId(factory?: () => string): string;
+```
+
+- **`factory`** — optional. A function returning the id string. Called exactly once, on first render. Defaults to UUID v4.
+- **Returns** — the id, stable across all re-renders of the component.
+
+## License
+
+MIT
